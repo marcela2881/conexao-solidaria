@@ -1,5 +1,6 @@
 from flask import Flask, render_template_string, request, redirect, url_for
 import sqlite3
+import os
 import qrcode
 import uuid
 from datetime import datetime
