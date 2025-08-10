@@ -1214,38 +1214,45 @@ TEMPLATE_INGRESSO = '''
                 </div>
             </div>
             
+            <div class="grupos-whatsapp">
+                <h4>📲 Grupos do WhatsApp</h4>
+                <div class="grupos-links">
+                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" 
+                       class="grupo-link grupo-iniciante">
+                        🏐 Grupo Iniciante (Manhã)
+                    </a>
+                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" 
+                       class="grupo-link grupo-intermediario">
+                        🥅 Grupo Intermediário (Tarde)
+                    </a>
+                </div>
+            </div>
+            
+            <!-- GRUPOS WHATSAPP -->
+            <div style="background: #dcfce7; border: 2px solid #22c55e; border-radius: 12px; padding: 14px; text-align: center; margin: 16px 0;">
+                <h4 style="color: #166534; margin-bottom: 12px; font-size: 0.95rem; font-weight: 600;">📲 Grupos do WhatsApp</h4>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
+                       style="background: #25d366; color: white; padding: 10px 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.8rem; text-align: center; display: block; margin-bottom: 4px; flex: 1; min-width: 140px;">
+                        🏐 Grupo Iniciante (Manhã)
+                    </a>
+                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
+                       style="background: #f59e0b; color: white; padding: 10px 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.8rem; text-align: center; display: block; flex: 1; min-width: 140px;">
+                        🥅 Grupo Intermediário (Tarde)
+                    </a>
+                </div>
+            </div>
+        </div>
         
         <div class="acoes">
             <button onclick="window.print()" class="btn btn-print">🖨️ Imprimir</button>
             <a href="/" class="btn btn-back">🔙 Voltar</a>
         </div>
     </div>
-               
-            <!-- GRUPOS PARA INSCRIÇÕES GRATUITAS TAMBÉM -->
-            <div class="whatsapp-section" style="margin-top: 30px;">
-                <h4 style="color: #166534; font-size: 1.5em; margin-bottom: 20px;">📲 Entre no grupo:</h4>
-                
-                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
-                       style="background: #25d366; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
-                        🏐 Grupo Iniciante (Manhã)
-                    </a>
-                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
-                       style="background: #f59e0b; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
-                        🥅 Grupo Intermediário (Tarde)
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
-        <div style="text-align: center; padding: 30px;">
-            <a href="/" class="back-btn">🔙 Voltar à Página Inicial</a>
-        </div>
-    </div>
 </body>
 </html>
 '''
+
 if __name__ == '__main__':
     init_db()
     print("🚀 Servidor iniciando...")
