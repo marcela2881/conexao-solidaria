@@ -1242,6 +1242,21 @@ TEMPLATE_INGRESSO = '''
                     </a>
                 </div>
             </div>
+            
+            <!-- GRUPOS WHATSAPP NO INGRESSO -->
+            <div style="background: #dcfce7; border: 2px solid #22c55e; border-radius: 12px; padding: 14px; text-align: center; margin: 16px 0;">
+                <h4 style="color: #166534; margin-bottom: 12px; font-size: 0.95rem; font-weight: 600;">📲 Entre nos Grupos do WhatsApp</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
+                       style="background: #25d366; color: white; padding: 12px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; text-align: center; display: block;">
+                        🏐 Grupo Iniciante (Manhã)
+                    </a>
+                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
+                       style="background: #f59e0b; color: white; padding: 12px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; text-align: center; display: block;">
+                        🥅 Grupo Intermediário (Tarde)
+                    </a>
+                </div>
+            </div>
         </div>
         
         <div class="acoes">
