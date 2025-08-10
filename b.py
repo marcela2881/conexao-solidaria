@@ -737,218 +737,492 @@ INDEX_TEMPLATE_COM_FOTOS = '''
 </body>
 </html>
 '''
+# SUBSTITUA O TEMPLATE_INGRESSO no seu código por este:
 
-# TEMPLATE DE PAGAMENTO COMPLETO E CORRIGIDO
-PAGAMENTO_TEMPLATE = '''
+TEMPLATE_INGRESSO = '''
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Pagamento PIX - Conexão Solidária</title>
+    <title>Ingresso - {{ ingresso[1] }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body { 
-            font-family: Arial, sans-serif; 
-            background: linear-gradient(135deg, #9333ea, #e879f9);
-            min-height: 100vh; 
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
+            background: #f1f5f9;
+            padding: 8px;
+            line-height: 1.4;
+            font-size: 14px;
         }
-        .container {
-            max-width: 700px;
+        
+        .ingresso-container {
+            max-width: 420px;
             margin: 0 auto;
             background: white;
-            border-radius: 25px;
-            padding: 0;
-            box-shadow: 0 25px 50px rgba(147, 51, 234, 0.4);
-            border: 3px solid #9333ea;
+            border-radius: 16px;
             overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            border: 2px solid #9333ea;
         }
-        .header {
+        
+        .ingresso-header {
             background: linear-gradient(135deg, #9333ea, #7c3aed);
             color: white;
-            padding: 30px;
+            padding: 16px 12px;
             text-align: center;
         }
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: bold;
+        
+        .evento-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            line-height: 1.2;
         }
-        .info-section {
-            padding: 30px;
-            background: #f8fafc;
+        
+        .evento-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.95;
+            margin-bottom: 8px;
+            line-height: 1.2;
         }
-        .info-box {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            border: 2px solid #e2e8f0;
-            margin-bottom: 20px;
-        }
-        .info-box h3 {
-            color: #9333ea;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-        }
-        .pix-section {
-            background: white;
-            padding: 40px;
-            text-align: center;
-        }
-        .valor-destaque {
-            background: linear-gradient(135deg, #9333ea, #7c3aed);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            font-size: 2em;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        .qr-container {
-            background: white;
-            padding: 25px;
-            border-radius: 20px;
+        
+        .evento-data {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
             display: inline-block;
-            margin: 25px 0;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            border: 3px solid #0ea5e9;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
-        .whatsapp-section {
-            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-            border: 3px solid #22c55e;
-            border-radius: 20px;
-            padding: 30px;
-            margin: 30px 0;
-            text-align: center;
+        
+        .ingresso-body {
+            padding: 16px 12px;
         }
-        .back-btn {
-            background: #6b7280;
+        
+        .dados-participante {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+        
+        .dados-participante h3 {
+            color: #9333ea;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #9333ea;
+            padding-bottom: 6px;
+            font-weight: 700;
+        }
+        
+        .dado-item {
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .dado-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.85rem;
+        }
+        
+        .dado-valor {
+            color: #6b7280;
+            font-size: 0.9rem;
+            word-break: break-word;
+            padding-left: 8px;
+        }
+        
+        .preco-box {
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
             color: white;
-            padding: 15px 30px;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 16px 0;
+        }
+        
+        .preco-valor {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .preco-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        
+        .qr-section {
+            text-align: center;
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid #9333ea;
+            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.15);
+            margin-bottom: 16px;
+        }
+        
+        .qr-section h4 {
+            color: #9333ea;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .qr-code img {
+            max-width: 160px;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px;
+            background: white;
+        }
+        
+        .ingresso-id {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        
+        .evento-details {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 2px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .evento-details h4 {
+            color: #0c4a6e;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .evento-details p {
+            color: #0c4a6e;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        .detalhes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .detalhe-item {
+            background: white;
+            padding: 10px 6px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #0ea5e9;
+        }
+        
+        .detalhe-emoji {
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+        
+        .detalhe-texto {
+            color: #0c4a6e;
+            font-weight: 600;
+            font-size: 0.75rem;
+            line-height: 1.2;
+        }
+        
+        .instrucoes {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 14px;
+            margin: 16px 0;
+        }
+        
+        .instrucoes h4 {
+            color: #92400e;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .instrucoes ul {
+            color: #92400e;
+            margin-left: 16px;
+            font-size: 0.8rem;
+        }
+        
+        .instrucoes li {
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        
+        .grupos-whatsapp {
+            background: #dcfce7; 
+            border: 2px solid #22c55e; 
+            border-radius: 12px; 
+            padding: 14px; 
+            text-align: center;
+            margin: 16px 0;
+        }
+        
+        .grupos-whatsapp h4 {
+            color: #166534; 
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .grupos-links {
+            display: flex; 
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .grupo-link {
+            padding: 10px 12px; 
+            border-radius: 8px; 
+            text-decoration: none; 
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-align: center;
+            display: block;
+        }
+        
+        .grupo-iniciante {
+            background: #25d366;
+            color: white;
+        }
+        
+        .grupo-intermediario {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .acoes {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 2px dashed #e2e8f0;
+        }
+        
+        .btn {
+            padding: 12px 20px;
             border: none;
-            border-radius: 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            margin: 30px auto;
-            font-weight: bold;
+            margin: 6px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-print {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: white;
+        }
+        
+        .btn-back {
+            background: #6b7280;
+            color: white;
+        }
+        
+        /* RESPONSIVIDADE AVANÇADA */
+        @media (max-width: 380px) {
+            body { padding: 4px; font-size: 13px; }
+            .ingresso-container { border-radius: 12px; }
+            .ingresso-header { padding: 12px 8px; }
+            .evento-title { font-size: 1.2rem; }
+            .evento-subtitle { font-size: 0.85rem; }
+            .ingresso-body { padding: 12px 8px; }
+            .dados-participante { padding: 12px; }
+            .qr-code img { max-width: 140px; }
+            .detalhes-grid { grid-template-columns: 1fr; gap: 6px; }
+            .grupos-links { gap: 6px; }
+            .btn { padding: 10px 16px; font-size: 0.85rem; margin: 4px; }
+        }
+        
+        @media (max-width: 320px) {
+            .evento-title { font-size: 1.1rem; }
+            .preco-valor { font-size: 1.4rem; }
+            .qr-code img { max-width: 120px; }
+            .detalhe-texto { font-size: 0.7rem; }
+        }
+        
+        /* MODO PAISAGEM */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .ingresso-container { max-width: 90vw; }
+            .participante-info { 
+                display: grid; 
+                grid-template-columns: 1fr 200px; 
+                gap: 16px; 
+                align-items: start;
+            }
+            .qr-section { margin: 0; }
+        }
+        
+        @media print {
+            body { background: white; padding: 0; }
+            .acoes { display: none; }
+            .ingresso-container { 
+                box-shadow: none; 
+                border: 2px solid #9333ea;
+                max-width: none;
+                margin: 0;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🏐 Pagamento PIX</h1>
-            <p>I Torneio Beneficente - Conexão Solidária 2025</p>
+    <div class="ingresso-container">
+        <!-- CABEÇALHO -->
+        <div class="ingresso-header">
+            <div class="evento-title">🏐 I TORNEIO BENEFICENTE</div>
+            <div class="evento-subtitle">🥅 CONEXÃO SOLIDÁRIA 2025 🥅</div>
+            <div class="evento-data">📅 Data do Evento</div>
         </div>
         
-        <div class="info-section">
-            <div class="info-box">
-                <h3>📋 Resumo do Pedido</h3>
-                <p><strong>🎫 ID:</strong> {{ ingresso[0] }}</p>
-                <p><strong>📧 E-mail:</strong> {{ ingresso[2] }}</p>
-                <p><strong>🏷️ Detalhes:</strong> {{ ingresso[5] }}</p>
-                <p><strong>💰 Valor:</strong> {% if ingresso[6] == 0 %}GRATUITO{% else %}R$ {{ "%.2f"|format(ingresso[6]) }}{% endif %}</p>
-            </div>
-        </div>
-        
-        {% if ingresso[6] > 0 %}
-        <div class="pix-section">
-            <h2 style="color: #0369a1; font-size: 2em;">🔸 Pagamento via PIX</h2>
+        <!-- CORPO -->
+        <div class="ingresso-body">
             
-            <div class="valor-destaque">
-                💰 R$ {{ "%.2f"|format(ingresso[6]) }}
-            </div>
-            
-            <div style="background: #f0f9ff; padding: 20px; border-radius: 15px; margin: 25px 0;">
-                <p style="color: #0369a1; font-weight: bold;">📧 Chave PIX: conexaosolidariamao@gmail.com</p>
-                <p style="color: #0369a1; font-weight: bold;">👤 Beneficiário: Conexão Solidária</p>
-            </div>
-            
-            {% if qr_code %}
-            <div class="qr-container">
-                <h4 style="color: #0369a1; margin-bottom: 15px;">📱 QR Code PIX</h4>
-                <img src="data:image/png;base64,{{ qr_code }}" style="max-width: 280px;">
-                <p style="color: #6b7280; margin-top: 15px;">Escaneie com o app do seu banco</p>
-            </div>
-            {% endif %}
-            
-            <div class="whatsapp-section">
-                <h4 style="color: #166534; font-size: 1.5em; margin-bottom: 20px;">📲 Após o pagamento:</h4>
-                
-                <!-- INFORMAÇÕES IMPORTANTES -->
-                <div style="background: #fef3c7; border: 3px solid #f59e0b; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
-                    <h5 style="color: #92400e; font-size: 1.2em; margin-bottom: 15px; font-weight: bold;">⚠️ INFORMAÇÕES IMPORTANTES:</h5>
-                    <p style="color: #92400e; font-size: 1.1em; margin-bottom: 10px;">
-                        📅 <strong>Prazo de pagamento:</strong> até 20 de agosto
-                    </p>
-                    <p style="color: #92400e; font-size: 1.1em;">
-                        ✅ <strong>Confirmação:</strong> Vaga confirmada apenas mediante pagamento
-                    </p>
+            <!-- DADOS + QR CODE -->
+            <div class="participante-info">
+                <div class="dados-participante">
+                    <h3>👤 Dados do Participante</h3>
+                    
+                    <div class="dado-item">
+                        <span class="dado-label">🆔 ID:</span>
+                        <span class="dado-valor">{{ ingresso[0] }}</span>
+                    </div>
+                    
+                    <div class="dado-item">
+                        <span class="dado-label">👤 Nome:</span>
+                        <span class="dado-valor">{{ ingresso[1] }}</span>
+                    </div>
+                    
+                    <div class="dado-item">
+                        <span class="dado-label">📧 Email:</span>
+                        <span class="dado-valor">{{ ingresso[2] }}</span>
+                    </div>
+                    
+                    <div class="dado-item">
+                        <span class="dado-label">📱 Telefone:</span>
+                        <span class="dado-valor">{{ ingresso[3] or 'Não informado' }}</span>
+                    </div>
+                    
+                    <div class="dado-item">
+                        <span class="dado-label">🎂 Idade:</span>
+                        <span class="dado-valor">{{ ingresso[4] }} anos</span>
+                    </div>
+                    
+                    <div class="dado-item">
+                        <span class="dado-label">🏷️ Categoria:</span>
+                        <span class="dado-valor">{{ ingresso[5] }}</span>
+                    </div>
                 </div>
                 
-                <p style="color: #166534; margin-bottom: 25px; font-size: 1.2em;">
-                    <strong>1. Envie o comprovante via WhatsApp:</strong>
-                </p>
-                
-                <div style="background: white; padding: 25px; border-radius: 15px; border: 3px solid #25d366; margin-bottom: 20px;">
-                    <p style="color: #128c7e; font-size: 1.4em; font-weight: bold; margin-bottom: 15px;">
-                        📱 (92) 99286-8443
-                    </p>
-                    <a href="https://wa.me/qr/QEREOZHZPAF2P1" target="_blank" 
-                       style="color: #25d366; font-size: 1.1em; text-decoration: none; font-weight: bold;">
-                        👆 Clique aqui para abrir o WhatsApp
-                    </a>
+                <div class="qr-section">
+                    <h4>📱 QR Code</h4>
+                    <div class="qr-code">
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+                    </div>
+                    <div class="ingresso-id">ID: {{ ingresso[0] }}</div>
                 </div>
+            </div>
+            
+            <!-- VALOR -->
+            <div class="preco-box">
+                <div class="preco-valor">
+                    {% if ingresso[6] == 0 %}
+                        🎁 GRATUITO
+                    {% else %}
+                        💰 R$ {{ "%.2f"|format(ingresso[6]) }}
+                    {% endif %}
+                </div>
+                <div class="preco-label">Valor da Inscrição</div>
+            </div>
+            
+            <!-- LOCAL -->
+            <div class="evento-details">
+                <h4>📍 Informações do Evento</h4>
+                <p><strong>📍 Local:</strong> Rua Jaboti, 231 - Novo Aleixo<br>
+                   <strong>🗺️ Ref.:</strong> Próximo à USF 58 - Águas Claras 2</p>
                 
-                <p style="color: #166534; margin-bottom: 15px; font-size: 1.2em;">
-                    <strong>2. Entre no grupo do seu nível:</strong>
-                </p>
-                
-                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
-                       style="background: #25d366; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
+                <div class="detalhes-grid">
+                    <div class="detalhe-item">
+                        <div class="detalhe-emoji">🏊‍♂️</div>
+                        <div class="detalhe-texto">Piscina</div>
+                    </div>
+                    <div class="detalhe-item">
+                        <div class="detalhe-emoji">🥩</div>
+                        <div class="detalhe-texto">Churrasco</div>
+                    </div>
+                    <div class="detalhe-item">
+                        <div class="detalhe-emoji">🎱</div>
+                        <div class="detalhe-texto">Sinuca</div>
+                    </div>
+                    <div class="detalhe-item">
+                        <div class="detalhe-emoji">🎤</div>
+                        <div class="detalhe-texto">Karaokê</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- INSTRUÇÕES -->
+            <div class="instrucoes">
+                <h4>📋 Instruções Importantes:</h4>
+                <ul>
+                    <li><strong>Apresente este ingresso</strong> na entrada</li>
+                    <li><strong>Chegue com antecedência</strong> para evitar filas</li>
+                    <li><strong>Documento</strong> para idade se solicitado</li>
+                    <li><strong>Entre nos grupos</strong> do WhatsApp</li>
+                    <li><strong>Ingresso pessoal</strong> e intransferível</li>
+                </ul>
+            </div>
+            
+            <!-- GRUPOS WHATSAPP -->
+            <div class="grupos-whatsapp">
+                <h4>📲 Grupos do WhatsApp</h4>
+                <div class="grupos-links">
+                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" 
+                       class="grupo-link grupo-iniciante">
                         🏐 Grupo Iniciante (Manhã)
                     </a>
-                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
-                       style="background: #f59e0b; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
+                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" 
+                       class="grupo-link grupo-intermediario">
                         🥅 Grupo Intermediário (Tarde)
                     </a>
                 </div>
             </div>
         </div>
-        {% else %}
-        <div style="background: linear-gradient(135deg, #f3e8ff, #e879f9); padding: 40px; text-align: center; margin: 30px;">
-            <h2 style="color: #9333ea; font-size: 2.5em; margin-bottom: 20px;">🎁 Inscrição Gratuita!</h2>
-            <p style="font-size: 1.3em; color: #7c3aed; margin-bottom: 25px;">
-                Parabéns! Sua inscrição não tem custo.<br>
-                Crianças de 0 a 5 anos têm entrada gratuita!
-            </p>
-            
-            <!-- GRUPOS PARA INSCRIÇÕES GRATUITAS TAMBÉM -->
-            <div class="whatsapp-section" style="margin-top: 30px;">
-                <h4 style="color: #166534; font-size: 1.5em; margin-bottom: 20px;">📲 Entre no grupo:</h4>
-                
-                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
-                       style="background: #25d366; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
-                        🏐 Grupo Iniciante (Manhã)
-                    </a>
-                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
-                       style="background: #f59e0b; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
-                        🥅 Grupo Intermediário (Tarde)
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% endif %}
         
-        <div style="text-align: center; padding: 30px;">
-            <a href="/" class="back-btn">🔙 Voltar à Página Inicial</a>
+        <!-- AÇÕES -->
+        <div class="acoes">
+            <button onclick="window.print()" class="btn btn-print">🖨️ Imprimir</button>
+            <a href="/admin/dashboard?senha=conexao2025" class="btn btn-back">🔙 Admin</a>
         </div>
     </div>
 </body>
 </html>
+'''
 '''
 # SUBSTITUA O TEMPLATE ADMIN_DASHBOARD_TEMPLATE EXISTENTE POR ESTE:
 
