@@ -171,7 +171,30 @@ def pagamento_simples(ingresso_id):
     
     return render_template_string(PAGAMENTO_TEMPLATE, ingresso=ingresso, qr_code=pix_qr_str)
 
-# Template atualizado com suas fotos reais
+@app.route('/gerar_ingresso/<ingresso_id>')
+def gerar_ingresso(ingresso_id):
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM ingressos WHERE id = ?', (ingresso_id,))
+    ingresso = c.fetchone()
+    conn.close()
+    
+    if not ingresso:
+        return "Ingresso não encontrado!"
+    
+    qr_data = f"{ingresso[0]}|{ingresso[1]}|{ingresso[2]}"
+    qr = qrcode.QRCode(version=1, box_size=8, border=4)
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#9333ea", back_color="white")
+    
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    qr_code_base64 = base64.b64encode(buffered.getvalue()).decode()
+    
+    return render_template_string(TEMPLATE_INGRESSO, ingresso=ingresso, qr_code=qr_code_base64)
+
+# TEMPLATES
 INDEX_TEMPLATE_COM_FOTOS = '''
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -363,7 +386,6 @@ INDEX_TEMPLATE_COM_FOTOS = '''
             margin-right: auto;
         }
         
-        /* NOVO CSS PARA SUAS FOTOS REAIS */
         .foto-real {
             position: relative;
             border-radius: 12px;
@@ -429,85 +451,6 @@ INDEX_TEMPLATE_COM_FOTOS = '''
         <div class="form-section">
             <h3 class="section-title">🏐 Faça sua Inscrição</h3>
             
-            <!-- INFORMAÇÕES SOBRE LOCAL E ATRAÇÕES -->
-            <div style="background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 3px solid #0ea5e9; border-radius: 20px; padding: 25px; margin-bottom: 20px;">
-                <h4 style="color: #0c4a6e; font-size: 1.4em; margin-bottom: 15px; font-weight: bold;">📍 Local do Evento</h4>
-                <p style="color: #0c4a6e; font-size: 1.1em; margin-bottom: 10px;">
-                    <strong>📍 Endereço:</strong> Rua Jaboti, 231 - Novo Aleixo - Conj. Águas Claras 2
-                </p>
-                <p style="color: #0c4a6e; font-size: 1.1em; margin-bottom: 15px;">
-                    <strong>🗺️ Referência:</strong> Próximo à USF 58 do Conj. Águas Claras 2
-                </p>
-                
-                <h5 style="color: #0c4a6e; font-size: 1.2em; margin-bottom: 10px; font-weight: bold;">🎉 Atrações Disponíveis:</h5>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                    <div style="background: white; padding: 10px; border-radius: 10px; text-align: center;">
-                        <span style="color: #0ea5e9; font-weight: bold;">🏊‍♂️ Piscina</span>
-                    </div>
-                    <div style="background: white; padding: 10px; border-radius: 10px; text-align: center;">
-                        <span style="color: #0ea5e9; font-weight: bold;">🥩 Churrasco</span>
-                    </div>
-                    <div style="background: white; padding: 10px; border-radius: 10px; text-align: center;">
-                        <span style="color: #0ea5e9; font-weight: bold;">🎱 Sinuca</span>
-                    </div>
-                    <div style="background: white; padding: 10px; border-radius: 10px; text-align: center;">
-                        <span style="color: #0ea5e9; font-weight: bold;">🎤 Karaokê</span>
-                    </div>
-                    <div style="background: white; padding: 10px; border-radius: 10px; text-align: center;">
-                        <span style="color: #0ea5e9; font-weight: bold;">⚽ Campo de Areia</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- INFORMAÇÕES SOBRE HORÁRIOS -->
-            <div style="background: linear-gradient(135deg, #ddd6fe, #c4b5fd); border: 3px solid #9333ea; border-radius: 20px; padding: 25px; margin-bottom: 20px; text-align: center;">
-                <h4 style="color: #581c87; font-size: 1.4em; margin-bottom: 15px; font-weight: bold;">🕐 Horários do Torneio</h4>
-                <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                    <div style="background: white; padding: 15px; border-radius: 15px; border: 2px solid #22c55e; min-width: 200px;">
-                        <p style="color: #22c55e; font-weight: bold; font-size: 1.1em;">🌅 MANHÃ</p>
-                        <p style="color: #374151; margin-top: 5px;">🏐 Nível Iniciante</p>
-                    </div>
-                    <div style="background: white; padding: 15px; border-radius: 15px; border: 2px solid #f59e0b; min-width: 200px;">
-                        <p style="color: #f59e0b; font-weight: bold; font-size: 1.1em;">🌅 TARDE</p>
-                        <p style="color: #374151; margin-top: 5px;">🥅 Nível Intermediário</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- BOTÃO PARA REGRAS DO EDITAL -->
-            <div style="text-align: center; margin-bottom: 30px;">
-                <button type="button" onclick="toggleRegras()" 
-                        style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 15px 30px; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                    📋 Ver Regras do Edital do Torneio
-                </button>
-                
-                <div id="regras-edital" style="display: none; background: #fef2f2; border: 3px solid #dc2626; border-radius: 15px; padding: 25px; margin-top: 20px; text-align: left;">
-                    <h4 style="color: #991b1b; font-size: 1.3em; margin-bottom: 15px; text-align: center;">📋 REGRAS DO EDITAL - I TORNEIO CONEXÃO SOLIDÁRIA</h4>
-                    
-                    <div style="color: #7f1d1d; line-height: 1.6;">
-                        <p><strong>🏐 MODALIDADE:</strong> Vôlei de areia/quadra</p>
-                        <p><strong>👥 CATEGORIAS:</strong> Iniciante (Manhã) e Intermediário (Tarde)</p>
-                        <p><strong>📅 DATA:</strong> [Inserir data do evento]</p>
-                        <p><strong>⏰ HORÁRIOS:</strong> Manhã (8h às 12h) / Tarde (13h às 17h)</p>
-                        <br>
-                        <p><strong>📋 REGRAS GERAIS:</strong></p>
-                        <ul style="margin-left: 20px;">
-                            <li>Equipes de 4 a 6 jogadores</li>
-                            <li>Inscrição mediante pagamento até 20/08</li>
-                            <li>Certificado de participação para todos</li>
-                            <li>Premiação: 1º, 2º e 3º lugares</li>
-                            <li>Fair play obrigatório</li>
-                        </ul>
-                        <br>
-                        <p><strong>🎯 OBJETIVO:</strong> Promover o esporte e arrecadar fundos para ações sociais do Conexão Solidária</p>
-                        
-                        <p style="text-align: center; margin-top: 20px; font-style: italic; color: #991b1b;">
-                            <em>"Mais que um torneio, uma ação de solidariedade!"</em>
-                        </p>
-                    </div>
-                </div>
-            </div>
-            
             <form method="POST" action="/processar_carrinho_simples">
                 <div id="pessoas-container">
                     <div class="pessoa-card" id="pessoa-1">
@@ -568,7 +511,6 @@ INDEX_TEMPLATE_COM_FOTOS = '''
         <div class="projeto-section">
             <h3 class="projeto-title">📸 Galeria do Projeto</h3>
             
-            <!-- SUAS FOTOS REAIS AQUI! -->
             <div class="fotos-grid">
                 <div class="foto-real">
                     <img src="/static/1.png.jpg" alt="Confraternização dos voluntários">
@@ -599,37 +541,15 @@ INDEX_TEMPLATE_COM_FOTOS = '''
             <div class="projeto-texto">
                 <strong>🤝 O Conexão Solidária</strong><br><br>
                 O Conexão Solidária é um projeto voluntário que nasceu do desejo de transformar realidades com pequenos gestos de amor.
-                Apoiamos crianças carentes, abrigos e pessoas em situação de rua, levando não só alimentos e materiais, mas também carinho, esperança e presença. 
-                <br><br>
-                Acreditamos que cada ato de cuidado pode acender uma nova luz na vida de alguém — e é isso que nos move a cada ação, realizada todo último fim de semana do mês.
                 <br><br>
                 <strong>🏐 O Torneio</strong><br><br>
-                Para continuar espalhando essa corrente do bem, criamos o Torneio Conexão Solidária, um evento beneficente que une esporte e solidariedade. 
-                Através do vôlei, arrecadamos fundos para manter nossas ações sociais e, ao mesmo tempo, promovemos um dia de lazer para toda a família, 
-                com almoço completo, day use e muita confraternização.
-                <br><br>
-                <em>Mais do que uma competição, é um convite para jogar junto pela inclusão e pela transformação social.</em> ❤️
+                Para continuar espalhando essa corrente do bem, criamos o Torneio Conexão Solidária, um evento beneficente que une esporte e solidariedade.
             </div>
         </div>
     </div>
 
     <script>
         let contadorPessoas = 1;
-        
-        function toggleRegras() {
-            const regrasDiv = document.getElementById('regras-edital');
-            const botao = event.target;
-            
-            if (regrasDiv.style.display === 'none' || regrasDiv.style.display === '') {
-                regrasDiv.style.display = 'block';
-                botao.innerHTML = '📋 Ocultar Regras do Edital';
-                botao.style.background = 'linear-gradient(135deg, #16a34a, #15803d)';
-            } else {
-                regrasDiv.style.display = 'none';
-                botao.innerHTML = '📋 Ver Regras do Edital do Torneio';
-                botao.style.background = 'linear-gradient(135deg, #dc2626, #b91c1c)';
-            }
-        }
         
         function calcularPrecoIndividual(idade, categoria) {
             if (idade <= 5) return 0;
@@ -737,7 +657,170 @@ INDEX_TEMPLATE_COM_FOTOS = '''
 </body>
 </html>
 '''
-# SUBSTITUA O TEMPLATE_INGRESSO no seu código por este:
+
+PAGAMENTO_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pagamento PIX - Conexão Solidária</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #9333ea, #e879f9);
+            min-height: 100vh; 
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 25px 50px rgba(147, 51, 234, 0.4);
+            border: 3px solid #9333ea;
+        }
+        .header {
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .info-box {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+        .info-box h3 {
+            color: #9333ea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .pix-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .valor-destaque {
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 2em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .qr-container {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 25px 0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 3px solid #0ea5e9;
+        }
+        .whatsapp-section {
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+            border: 3px solid #22c55e;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .back-btn {
+            background: #6b7280;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 15px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 30px auto;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏐 Pagamento PIX</h1>
+            <p>I Torneio Beneficente - Conexão Solidária 2025</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>📋 Resumo do Pedido</h3>
+            <p><strong>🎫 ID:</strong> {{ ingresso[0] }}</p>
+            <p><strong>📧 E-mail:</strong> {{ ingresso[2] }}</p>
+            <p><strong>🏷️ Detalhes:</strong> {{ ingresso[5] }}</p>
+            <p><strong>💰 Valor:</strong> {% if ingresso[6] == 0 %}GRATUITO{% else %}R$ {{ "%.2f"|format(ingresso[6]) }}{% endif %}</p>
+        </div>
+        
+        {% if ingresso[6] > 0 %}
+        <div class="pix-section">
+            <h2 style="color: #0369a1; font-size: 2em;">🔸 Pagamento via PIX</h2>
+            
+            <div class="valor-destaque">
+                💰 R$ {{ "%.2f"|format(ingresso[6]) }}
+            </div>
+            
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 15px; margin: 25px 0;">
+                <p style="color: #0369a1; font-weight: bold;">📧 Chave PIX: conexaosolidariamao@gmail.com</p>
+                <p style="color: #0369a1; font-weight: bold;">👤 Beneficiário: Conexão Solidária</p>
+            </div>
+            
+            {% if qr_code %}
+            <div class="qr-container">
+                <h4 style="color: #0369a1; margin-bottom: 15px;">📱 QR Code PIX</h4>
+                <img src="data:image/png;base64,{{ qr_code }}" style="max-width: 280px;">
+                <p style="color: #6b7280; margin-top: 15px;">Escaneie com o app do seu banco</p>
+            </div>
+            {% endif %}
+            
+            <div class="whatsapp-section">
+                <h4 style="color: #166534; font-size: 1.5em; margin-bottom: 20px;">📲 Após o pagamento:</h4>
+                
+                <p style="color: #166534; margin-bottom: 25px; font-size: 1.2em;">
+                    <strong>1. Envie o comprovante via WhatsApp:</strong>
+                </p>
+                
+                <div style="background: white; padding: 25px; border-radius: 15px; border: 3px solid #25d366; margin-bottom: 20px;">
+                    <p style="color: #128c7e; font-size: 1.4em; font-weight: bold; margin-bottom: 15px;">
+                        📱 (92) 99286-8443
+                    </p>
+                    <a href="https://wa.me/5592992868443" target="_blank" 
+                       style="color: #25d366; font-size: 1.1em; text-decoration: none; font-weight: bold;">
+                        👆 Clique aqui para abrir o WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div style="background: linear-gradient(135deg, #f3e8ff, #e879f9); padding: 40px; text-align: center; margin: 30px;">
+            <h2 style="color: #9333ea; font-size: 2.5em; margin-bottom: 20px;">🎁 Inscrição Gratuita!</h2>
+            <p style="font-size: 1.3em; color: #7c3aed; margin-bottom: 25px;">
+                Parabéns! Sua inscrição não tem custo.<br>
+                Crianças de 0 a 5 anos têm entrada gratuita!
+            </p>
+        </div>
+        {% endif %}
+        
+        <div style="text-align: center; padding: 30px;">
+            <a href="/" class="back-btn">🔙 Voltar à Página Inicial</a>
+        </div>
+    </div>
+</body>
+</html>
+'''
 
 TEMPLATE_INGRESSO = '''
 <!DOCTYPE html>
@@ -943,74 +1026,6 @@ TEMPLATE_INGRESSO = '''
             line-height: 1.2;
         }
         
-        .instrucoes {
-            background: #fef3c7;
-            border: 2px solid #f59e0b;
-            border-radius: 12px;
-            padding: 14px;
-            margin: 16px 0;
-        }
-        
-        .instrucoes h4 {
-            color: #92400e;
-            margin-bottom: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-        
-        .instrucoes ul {
-            color: #92400e;
-            margin-left: 16px;
-            font-size: 0.8rem;
-        }
-        
-        .instrucoes li {
-            margin-bottom: 6px;
-            line-height: 1.3;
-        }
-        
-        .grupos-whatsapp {
-            background: #dcfce7; 
-            border: 2px solid #22c55e; 
-            border-radius: 12px; 
-            padding: 14px; 
-            text-align: center;
-            margin: 16px 0;
-        }
-        
-        .grupos-whatsapp h4 {
-            color: #166534; 
-            margin-bottom: 12px;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-        
-        .grupos-links {
-            display: flex; 
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .grupo-link {
-            padding: 10px 12px; 
-            border-radius: 8px; 
-            text-decoration: none; 
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-align: center;
-            display: block;
-        }
-        
-        .grupo-iniciante {
-            background: #25d366;
-            color: white;
-        }
-        
-        .grupo-intermediario {
-            background: #f59e0b;
-            color: white;
-        }
-        
         .acoes {
             text-align: center;
             margin-top: 20px;
@@ -1045,7 +1060,6 @@ TEMPLATE_INGRESSO = '''
             color: white;
         }
         
-        /* RESPONSIVIDADE AVANÇADA */
         @media (max-width: 380px) {
             body { padding: 4px; font-size: 13px; }
             .ingresso-container { border-radius: 12px; }
@@ -1056,27 +1070,7 @@ TEMPLATE_INGRESSO = '''
             .dados-participante { padding: 12px; }
             .qr-code img { max-width: 140px; }
             .detalhes-grid { grid-template-columns: 1fr; gap: 6px; }
-            .grupos-links { gap: 6px; }
             .btn { padding: 10px 16px; font-size: 0.85rem; margin: 4px; }
-        }
-        
-        @media (max-width: 320px) {
-            .evento-title { font-size: 1.1rem; }
-            .preco-valor { font-size: 1.4rem; }
-            .qr-code img { max-width: 120px; }
-            .detalhe-texto { font-size: 0.7rem; }
-        }
-        
-        /* MODO PAISAGEM */
-        @media (orientation: landscape) and (max-height: 500px) {
-            .ingresso-container { max-width: 90vw; }
-            .participante-info { 
-                display: grid; 
-                grid-template-columns: 1fr 200px; 
-                gap: 16px; 
-                align-items: start;
-            }
-            .qr-section { margin: 0; }
         }
         
         @media print {
@@ -1093,62 +1087,55 @@ TEMPLATE_INGRESSO = '''
 </head>
 <body>
     <div class="ingresso-container">
-        <!-- CABEÇALHO -->
         <div class="ingresso-header">
             <div class="evento-title">🏐 I TORNEIO BENEFICENTE</div>
             <div class="evento-subtitle">🥅 CONEXÃO SOLIDÁRIA 2025 🥅</div>
             <div class="evento-data">📅 Data do Evento</div>
         </div>
         
-        <!-- CORPO -->
         <div class="ingresso-body">
-            
-            <!-- DADOS + QR CODE -->
-            <div class="participante-info">
-                <div class="dados-participante">
-                    <h3>👤 Dados do Participante</h3>
-                    
-                    <div class="dado-item">
-                        <span class="dado-label">🆔 ID:</span>
-                        <span class="dado-valor">{{ ingresso[0] }}</span>
-                    </div>
-                    
-                    <div class="dado-item">
-                        <span class="dado-label">👤 Nome:</span>
-                        <span class="dado-valor">{{ ingresso[1] }}</span>
-                    </div>
-                    
-                    <div class="dado-item">
-                        <span class="dado-label">📧 Email:</span>
-                        <span class="dado-valor">{{ ingresso[2] }}</span>
-                    </div>
-                    
-                    <div class="dado-item">
-                        <span class="dado-label">📱 Telefone:</span>
-                        <span class="dado-valor">{{ ingresso[3] or 'Não informado' }}</span>
-                    </div>
-                    
-                    <div class="dado-item">
-                        <span class="dado-label">🎂 Idade:</span>
-                        <span class="dado-valor">{{ ingresso[4] }} anos</span>
-                    </div>
-                    
-                    <div class="dado-item">
-                        <span class="dado-label">🏷️ Categoria:</span>
-                        <span class="dado-valor">{{ ingresso[5] }}</span>
-                    </div>
+            <div class="dados-participante">
+                <h3>👤 Dados do Participante</h3>
+                
+                <div class="dado-item">
+                    <span class="dado-label">🆔 ID:</span>
+                    <span class="dado-valor">{{ ingresso[0] }}</span>
                 </div>
                 
-                <div class="qr-section">
-                    <h4>📱 QR Code</h4>
-                    <div class="qr-code">
-                        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
-                    </div>
-                    <div class="ingresso-id">ID: {{ ingresso[0] }}</div>
+                <div class="dado-item">
+                    <span class="dado-label">👤 Nome:</span>
+                    <span class="dado-valor">{{ ingresso[1] }}</span>
+                </div>
+                
+                <div class="dado-item">
+                    <span class="dado-label">📧 Email:</span>
+                    <span class="dado-valor">{{ ingresso[2] }}</span>
+                </div>
+                
+                <div class="dado-item">
+                    <span class="dado-label">📱 Telefone:</span>
+                    <span class="dado-valor">{{ ingresso[3] or 'Não informado' }}</span>
+                </div>
+                
+                <div class="dado-item">
+                    <span class="dado-label">🎂 Idade:</span>
+                    <span class="dado-valor">{{ ingresso[4] }} anos</span>
+                </div>
+                
+                <div class="dado-item">
+                    <span class="dado-label">🏷️ Categoria:</span>
+                    <span class="dado-valor">{{ ingresso[5] }}</span>
                 </div>
             </div>
             
-            <!-- VALOR -->
+            <div class="qr-section">
+                <h4>📱 QR Code</h4>
+                <div class="qr-code">
+                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+                </div>
+                <div class="ingresso-id">ID: {{ ingresso[0] }}</div>
+            </div>
+            
             <div class="preco-box">
                 <div class="preco-valor">
                     {% if ingresso[6] == 0 %}
@@ -1160,7 +1147,6 @@ TEMPLATE_INGRESSO = '''
                 <div class="preco-label">Valor da Inscrição</div>
             </div>
             
-            <!-- LOCAL -->
             <div class="evento-details">
                 <h4>📍 Informações do Evento</h4>
                 <p><strong>📍 Local:</strong> Rua Jaboti, 231 - Novo Aleixo<br>
@@ -1185,352 +1171,17 @@ TEMPLATE_INGRESSO = '''
                     </div>
                 </div>
             </div>
-            
-            <!-- INSTRUÇÕES -->
-            <div class="instrucoes">
-                <h4>📋 Instruções Importantes:</h4>
-                <ul>
-                    <li><strong>Apresente este ingresso</strong> na entrada</li>
-                    <li><strong>Chegue com antecedência</strong> para evitar filas</li>
-                    <li><strong>Documento</strong> para idade se solicitado</li>
-                    <li><strong>Entre nos grupos</strong> do WhatsApp</li>
-                    <li><strong>Ingresso pessoal</strong> e intransferível</li>
-                </ul>
-            </div>
-            
-            <!-- GRUPOS WHATSAPP -->
-            <div class="grupos-whatsapp">
-                <h4>📲 Grupos do WhatsApp</h4>
-                <div class="grupos-links">
-                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" 
-                       class="grupo-link grupo-iniciante">
-                        🏐 Grupo Iniciante (Manhã)
-                    </a>
-                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" 
-                       class="grupo-link grupo-intermediario">
-                        🥅 Grupo Intermediário (Tarde)
-                    </a>
-                </div>
-            </div>
         </div>
         
-        <!-- AÇÕES -->
         <div class="acoes">
             <button onclick="window.print()" class="btn btn-print">🖨️ Imprimir</button>
-            <a href="/admin/dashboard?senha=conexao2025" class="btn btn-back">🔙 Admin</a>
+            <a href="/" class="btn btn-back">🔙 Voltar</a>
         </div>
     </div>
 </body>
 </html>
 '''
-'''
-# SUBSTITUA O TEMPLATE ADMIN_DASHBOARD_TEMPLATE EXISTENTE POR ESTE:
 
-ADMIN_DASHBOARD_TEMPLATE = '''
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard Admin - Conexão Solidária</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: Arial, sans-serif; 
-            background: #f1f5f9;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .header {
-            background: linear-gradient(135deg, #9333ea, #7c3aed);
-            color: white;
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border: 3px solid #e2e8f0;
-        }
-        .stat-number {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #9333ea;
-            margin-bottom: 10px;
-        }
-        .actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .action-btn {
-            padding: 20px;
-            border: none;
-            border-radius: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            text-decoration: none;
-            display: block;
-            text-align: center;
-            transition: transform 0.2s;
-        }
-        .action-btn:hover {
-            transform: translateY(-2px);
-        }
-        .btn-export { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
-        .btn-home { background: linear-gradient(135deg, #6b7280, #4b5563); color: white; }
-        
-        .table-container {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 900px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-            vertical-align: middle;
-        }
-        th {
-            background: #f8fafc;
-            font-weight: bold;
-            color: #374151;
-            font-size: 14px;
-        }
-        td {
-            font-size: 13px;
-        }
-        .status-pendente { 
-            background: #fef3c7; 
-            color: #92400e; 
-            padding: 4px 8px; 
-            border-radius: 15px; 
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .status-confirmado { 
-            background: #dcfce7; 
-            color: #166534; 
-            padding: 4px 8px; 
-            border-radius: 15px; 
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin: 1px;
-            font-size: 11px;
-            font-weight: bold;
-            text-align: center;
-            min-width: 70px;
-        }
-        .btn-confirmar { background: #22c55e; color: white; }
-        .btn-usar { background: #f59e0b; color: white; }
-        .btn-ingresso { 
-            background: linear-gradient(135deg, #9333ea, #7c3aed); 
-            color: white; 
-            font-size: 12px;
-            padding: 8px 12px;
-        }
-        .btn-ingresso:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(147, 51, 234, 0.3);
-        }
-        .usado { background: #f3f4f6; opacity: 0.7; }
-        
-        .acoes-col {
-            min-width: 180px;
-        }
-        
-        .nome-col {
-            max-width: 150px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        .categoria-col {
-            max-width: 200px;
-            font-size: 11px;
-        }
-        
-        .email-col {
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 11px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📊 Dashboard Administrativo</h1>
-            <p>I Torneio Beneficente - Conexão Solidária 2025</p>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">{{ total_inscricoes }}</div>
-                <div>👥 Total Inscrições</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">R$ {{ "%.2f"|format(receita_total) }}</div>
-                <div>💰 Receita Total</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ pagamentos_confirmados }}</div>
-                <div>✅ Pagamentos Confirmados</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ ingressos_utilizados }}</div>
-                <div>🎫 Ingressos Utilizados</div>
-            </div>
-        </div>
-        
-        <!-- AÇÕES RÁPIDAS -->
-        <div class="actions-grid">
-            <a href="/admin/exportar_excel?senha=conexao2025" class="action-btn btn-export">
-                📥 Exportar Excel/CSV
-            </a>
-            <a href="/" class="action-btn btn-home">
-                🏠 Voltar ao Site
-            </a>
-        </div>
-        
-        <div class="table-container">
-            <h2 style="margin-bottom: 20px; color: #374151;">📋 Lista de Inscrições</h2>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Telefone</th>
-                        <th>Categoria</th>
-                        <th>Preço</th>
-                        <th>Status</th>
-                        <th>Data</th>
-                        <th class="acoes-col">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for inscricao in inscricoes %}
-                    <tr {% if inscricao[9] %}class="usado"{% endif %}>
-                        <td><strong>{{ inscricao[0] }}</strong></td>
-                        <td class="nome-col" title="{{ inscricao[1] }}">{{ inscricao[1] }}</td>
-                        <td class="email-col" title="{{ inscricao[2] }}">{{ inscricao[2] }}</td>
-                        <td>{{ inscricao[3] or '-' }}</td>
-                        <td class="categoria-col">{{ inscricao[5] }}</td>
-                        <td>
-                            {% if inscricao[6] == 0 %}
-                                <span style="color: #22c55e; font-weight: bold;">GRATUITO</span>
-                            {% else %}
-                                <strong>R$ {{ "%.2f"|format(inscricao[6]) }}</strong>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if inscricao[7] == 'confirmado' %}
-                                <span class="status-confirmado">✅ Confirmado</span>
-                            {% else %}
-                                <span class="status-pendente">⏳ Pendente</span>
-                            {% endif %}
-                            {% if inscricao[9] %}
-                                <br><span style="color: #dc2626; font-weight: bold; font-size: 10px;">🎫 USADO</span>
-                            {% endif %}
-                        </td>
-                        <td style="font-size: 11px;">{{ inscricao[8][:10] if inscricao[8] else '-' }}</td>
-                        <td class="acoes-col">
-                            <!-- BOTÃO PRINCIPAL: GERAR INGRESSO -->
-                            <a href="/admin/gerar_ingresso/{{ inscricao[0] }}" 
-                               class="btn btn-ingresso" 
-                               target="_blank" 
-                               title="Gerar ingresso visual para {{ inscricao[1] }}">
-                                🎫 Gerar Ingresso
-                            </a>
-                            <br>
-                            
-                            <!-- OUTRAS AÇÕES -->
-                            {% if inscricao[7] != 'confirmado' and inscricao[6] > 0 %}
-                                <a href="/admin/confirmar_pagamento/{{ inscricao[0] }}" 
-                                   class="btn btn-confirmar"
-                                   title="Confirmar pagamento">✅ Confirmar</a>
-                            {% endif %}
-                            
-                            {% if not inscricao[9] and inscricao[7] == 'confirmado' %}
-                                <a href="/admin/marcar_usado/{{ inscricao[0] }}" 
-                                   class="btn btn-usar"
-                                   title="Marcar como usado">🎫 Usar</a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-            {% if not inscricoes %}
-            <div style="text-align: center; padding: 40px; color: #6b7280;">
-                <h3>😔 Nenhuma inscrição encontrada</h3>
-                <p>As inscrições aparecerão aqui quando as pessoas se cadastrarem.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</body>
-</html>
-'''
-@app.route('/gerar_ingresso/<ingresso_id>')
-def gerar_ingresso(ingresso_id):
-    conn = sqlite3.connect('conexao_solidaria.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM ingressos WHERE id = ?', (ingresso_id,))
-    ingresso = c.fetchone()
-    conn.close()
-    
-    if not ingresso:
-        return "Ingresso não encontrado!"
-    
-    qr_data = f"{ingresso[0]}|{ingresso[1]}|{ingresso[2]}"
-    qr = qrcode.QRCode(version=1, box_size=8, border=4)
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
-    qr_code_base64 = base64.b64encode(buffered.getvalue()).decode()
-    
-    return render_template_string(TEMPLATE_INGRESSO, ingresso=ingresso, qr_code=qr_code_base64)
 if __name__ == '__main__':
     init_db()
     print("🚀 Servidor iniciando...")
