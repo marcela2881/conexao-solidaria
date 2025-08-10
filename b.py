@@ -802,6 +802,21 @@ PAGAMENTO_TEMPLATE = '''
                         👆 Clique aqui para abrir o WhatsApp
                     </a>
                 </div>
+                
+                <p style="color: #166534; margin-bottom: 15px; font-size: 1.2em;">
+                    <strong>2. Entre no grupo do seu nível:</strong>
+                </p>
+                
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
+                       style="background: #25d366; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
+                        🏐 Grupo Iniciante (Manhã)
+                    </a>
+                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
+                       style="background: #f59e0b; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
+                        🥅 Grupo Intermediário (Tarde)
+                    </a>
+                </div>
             </div>
         </div>
         {% else %}
@@ -811,6 +826,22 @@ PAGAMENTO_TEMPLATE = '''
                 Parabéns! Sua inscrição não tem custo.<br>
                 Crianças de 0 a 5 anos têm entrada gratuita!
             </p>
+            
+            <!-- GRUPOS PARA INSCRIÇÕES GRATUITAS -->
+            <div style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); border: 3px solid #22c55e; border-radius: 20px; padding: 30px; margin: 30px 0; text-align: center;">
+                <h4 style="color: #166534; font-size: 1.5em; margin-bottom: 20px;">📲 Entre no grupo:</h4>
+                
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
+                       style="background: #25d366; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
+                        🏐 Grupo Iniciante (Manhã)
+                    </a>
+                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
+                       style="background: #f59e0b; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
+                        🥅 Grupo Intermediário (Tarde)
+                    </a>
+                </div>
+            </div>
         </div>
         {% endif %}
         
