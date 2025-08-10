@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for
+from flask import Flask, render_template_string, request, redirect, url_for, Response
 import sqlite3
 import os
 import qrcode
@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 import io
 import base64
+import csv
 
 app = Flask(__name__)
 app.secret_key = 'conexao_solidaria_2025'
@@ -13,7 +14,356 @@ app.secret_key = 'conexao_solidaria_2025'
 def init_db():
     conn = sqlite3.connect('conexao_solidaria.db')
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS ingressos (
+    c.execute('''
+
+ADMIN_LOGIN_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - Conexão Solidária</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #9333ea, #e879f9);
+            min-height: 100vh; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(147, 51, 234, 0.4);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        .login-container h1 {
+            color: #9333ea;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>🔐 Painel Admin</h1>
+        <form method="POST" action="/admin/dashboard">
+            <div class="form-group">
+                <input type="password" name="senha" placeholder="Digite a senha de admin" required>
+            </div>
+            <button type="submit" class="btn">🚀 Entrar</button>
+        </form>
+    </div>
+</body>
+</html>
+'''
+
+ADMIN_DASHBOARD_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard Admin - Conexão Solidária</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f1f5f9;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 3px solid #e2e8f0;
+        }
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #9333ea;
+            margin-bottom: 10px;
+        }
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .action-btn {
+            padding: 20px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn-export { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
+        .btn-home { background: linear-gradient(135deg, #6b7280, #4b5563); color: white; }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+        th {
+            background: #f8fafc;
+            font-weight: bold;
+            color: #374151;
+            font-size: 14px;
+        }
+        td {
+            font-size: 13px;
+        }
+        .status-pendente { 
+            background: #fef3c7; 
+            color: #92400e; 
+            padding: 4px 8px; 
+            border-radius: 15px; 
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .status-confirmado { 
+            background: #dcfce7; 
+            color: #166534; 
+            padding: 4px 8px; 
+            border-radius: 15px; 
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 1px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 70px;
+        }
+        .btn-confirmar { background: #22c55e; color: white; }
+        .btn-usar { background: #f59e0b; color: white; }
+        .btn-ingresso { 
+            background: linear-gradient(135deg, #9333ea, #7c3aed); 
+            color: white; 
+            font-size: 12px;
+            padding: 8px 12px;
+        }
+        .btn-ingresso:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(147, 51, 234, 0.3);
+        }
+        .usado { background: #f3f4f6; opacity: 0.7; }
+        
+        .acoes-col {
+            min-width: 180px;
+        }
+        
+        .nome-col {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .categoria-col {
+            max-width: 200px;
+            font-size: 11px;
+        }
+        
+        .email-col {
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Dashboard Administrativo</h1>
+            <p>I Torneio Beneficente - Conexão Solidária 2025</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_inscricoes }}</div>
+                <div>👥 Total Inscrições</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">R$ {{ "%.2f"|format(receita_total) }}</div>
+                <div>💰 Receita Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ pagamentos_confirmados }}</div>
+                <div>✅ Pagamentos Confirmados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ ingressos_utilizados }}</div>
+                <div>🎫 Ingressos Utilizados</div>
+            </div>
+        </div>
+        
+        <div class="actions-grid">
+            <a href="/admin/exportar_excel?senha=conexao2025" class="action-btn btn-export">
+                📥 Exportar Excel/CSV
+            </a>
+            <a href="/" class="action-btn btn-home">
+                🏠 Voltar ao Site
+            </a>
+        </div>
+        
+        <div class="table-container">
+            <h2 style="margin-bottom: 20px; color: #374151;">📋 Lista de Inscrições</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Telefone</th>
+                        <th>Categoria</th>
+                        <th>Preço</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                        <th class="acoes-col">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inscricao in inscricoes %}
+                    <tr {% if inscricao[9] %}class="usado"{% endif %}>
+                        <td><strong>{{ inscricao[0] }}</strong></td>
+                        <td class="nome-col" title="{{ inscricao[1] }}">{{ inscricao[1] }}</td>
+                        <td class="email-col" title="{{ inscricao[2] }}">{{ inscricao[2] }}</td>
+                        <td>{{ inscricao[3] or '-' }}</td>
+                        <td class="categoria-col">{{ inscricao[5] }}</td>
+                        <td>
+                            {% if inscricao[6] == 0 %}
+                                <span style="color: #22c55e; font-weight: bold;">GRATUITO</span>
+                            {% else %}
+                                <strong>R$ {{ "%.2f"|format(inscricao[6]) }}</strong>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if inscricao[7] == 'confirmado' %}
+                                <span class="status-confirmado">✅ Confirmado</span>
+                            {% else %}
+                                <span class="status-pendente">⏳ Pendente</span>
+                            {% endif %}
+                            {% if inscricao[9] %}
+                                <br><span style="color: #dc2626; font-weight: bold; font-size: 10px;">🎫 USADO</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 11px;">{{ inscricao[8][:10] if inscricao[8] else '-' }}</td>
+                        <td class="acoes-col">
+                            <a href="/gerar_ingresso/{{ inscricao[0] }}" 
+                               class="btn btn-ingresso" 
+                               target="_blank" 
+                               title="Gerar ingresso visual para {{ inscricao[1] }}">
+                                🎫 Gerar Ingresso
+                            </a>
+                            <br>
+                            
+                            {% if inscricao[7] != 'confirmado' and inscricao[6] > 0 %}
+                                <a href="/admin/confirmar_pagamento/{{ inscricao[0] }}" 
+                                   class="btn btn-confirmar"
+                                   title="Confirmar pagamento">✅ Confirmar</a>
+                            {% endif %}
+                            
+                            {% if not inscricao[9] and inscricao[7] == 'confirmado' %}
+                                <a href="/admin/marcar_usado/{{ inscricao[0] }}" 
+                                   class="btn btn-usar"
+                                   title="Marcar como usado">🎫 Usar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            {% if not inscricoes %}
+            <div style="text-align: center; padding: 40px; color: #6b7280;">
+                <h3>😔 Nenhuma inscrição encontrada</h3>
+                <p>As inscrições aparecerão aqui quando as pessoas se cadastrarem.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
+'''CREATE TABLE IF NOT EXISTS ingressos (
         id TEXT PRIMARY KEY,
         nome TEXT NOT NULL,
         email TEXT NOT NULL,
@@ -193,6 +543,95 @@ def gerar_ingresso(ingresso_id):
     qr_code_base64 = base64.b64encode(buffered.getvalue()).decode()
     
     return render_template_string(TEMPLATE_INGRESSO, ingresso=ingresso, qr_code=qr_code_base64)
+
+# ==================== ROTAS ADMINISTRATIVAS ====================
+ADMIN_PASSWORD = "conexao2025"
+
+@app.route('/admin')
+def admin_login():
+    return render_template_string(ADMIN_LOGIN_TEMPLATE)
+
+@app.route('/admin/dashboard', methods=['GET', 'POST'])
+def admin_dashboard():
+    # Verificar senha
+    if request.method == 'POST':
+        senha = request.form.get('senha')
+        if senha != ADMIN_PASSWORD:
+            return "❌ Senha incorreta!"
+    elif request.method == 'GET':
+        senha = request.args.get('senha')
+        if senha != ADMIN_PASSWORD:
+            return redirect('/admin')
+    
+    # Buscar dados do banco
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    
+    c.execute('''SELECT * FROM ingressos 
+                 WHERE status != "pedido_consolidado"
+                 ORDER BY data_compra DESC''')
+    inscricoes = c.fetchall()
+    
+    c.execute('SELECT COUNT(*) FROM ingressos WHERE status != "pedido_consolidado"')
+    total_inscricoes = c.fetchone()[0]
+    
+    c.execute('SELECT SUM(preco) FROM ingressos WHERE status != "pedido_consolidado"')
+    receita_total = c.fetchone()[0] or 0
+    
+    c.execute('SELECT COUNT(*) FROM ingressos WHERE status = "confirmado"')
+    pagamentos_confirmados = c.fetchone()[0]
+    
+    c.execute('SELECT COUNT(*) FROM ingressos WHERE usado = 1')
+    ingressos_utilizados = c.fetchone()[0]
+    
+    conn.close()
+    
+    return render_template_string(ADMIN_DASHBOARD_TEMPLATE, 
+                                 inscricoes=inscricoes,
+                                 total_inscricoes=total_inscricoes,
+                                 receita_total=receita_total,
+                                 pagamentos_confirmados=pagamentos_confirmados,
+                                 ingressos_utilizados=ingressos_utilizados)
+
+@app.route('/admin/confirmar_pagamento/<ingresso_id>')
+def confirmar_pagamento(ingresso_id):
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('UPDATE ingressos SET status = "confirmado" WHERE id = ?', (ingresso_id,))
+    conn.commit()
+    conn.close()
+    return redirect(f'/admin/dashboard?senha={ADMIN_PASSWORD}')
+
+@app.route('/admin/marcar_usado/<ingresso_id>')
+def marcar_usado(ingresso_id):
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('UPDATE ingressos SET usado = 1, data_uso = CURRENT_TIMESTAMP WHERE id = ?', (ingresso_id,))
+    conn.commit()
+    conn.close()
+    return redirect(f'/admin/dashboard?senha={ADMIN_PASSWORD}')
+
+@app.route('/admin/exportar_excel')
+def exportar_excel():
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM ingressos WHERE status != "pedido_consolidado" ORDER BY data_compra DESC')
+    dados = c.fetchall()
+    conn.close()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Nome', 'Email', 'Telefone', 'Idade', 'Categoria', 'Preço', 'Status', 'Data Compra', 'Usado', 'Data Uso', 'QR Code'])
+    
+    for linha in dados:
+        writer.writerow(linha)
+    
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=inscricoes_conexao_solidaria.csv"}
+    )
 
 # TEMPLATES
 INDEX_TEMPLATE_COM_FOTOS = '''
