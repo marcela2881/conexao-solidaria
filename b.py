@@ -1026,6 +1026,48 @@ TEMPLATE_INGRESSO = '''
             line-height: 1.2;
         }
         
+        .grupos-whatsapp {
+            background: #dcfce7; 
+            border: 2px solid #22c55e; 
+            border-radius: 12px; 
+            padding: 14px; 
+            text-align: center;
+            margin: 16px 0;
+        }
+        
+        .grupos-whatsapp h4 {
+            color: #166534; 
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .grupos-links {
+            display: flex; 
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .grupo-link {
+            padding: 10px 12px; 
+            border-radius: 8px; 
+            text-decoration: none; 
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-align: center;
+            display: block;
+        }
+        
+        .grupo-iniciante {
+            background: #25d366;
+            color: white;
+        }
+        
+        .grupo-intermediario {
+            background: #f59e0b;
+            color: white;
+        }
+        
         .acoes {
             text-align: center;
             margin-top: 20px;
@@ -1169,6 +1211,20 @@ TEMPLATE_INGRESSO = '''
                         <div class="detalhe-emoji">🎤</div>
                         <div class="detalhe-texto">Karaokê</div>
                     </div>
+                </div>
+            </div>
+            
+            <div class="grupos-whatsapp">
+                <h4>📲 Grupos do WhatsApp</h4>
+                <div class="grupos-links">
+                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" 
+                       class="grupo-link grupo-iniciante">
+                        🏐 Grupo Iniciante (Manhã)
+                    </a>
+                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" 
+                       class="grupo-link grupo-intermediario">
+                        🥅 Grupo Intermediário (Tarde)
+                    </a>
                 </div>
             </div>
         </div>
