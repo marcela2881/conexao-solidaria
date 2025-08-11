@@ -14,7 +14,22 @@ app.secret_key = 'conexao_solidaria_2025'
 def init_db():
     conn = sqlite3.connect('conexao_solidaria.db')
     c = conn.cursor()
-    c.execute('''
+   c.execute('''CREATE TABLE IF NOT EXISTS ingressos (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL,
+    telefone TEXT,
+    idade INTEGER,
+    categoria TEXT NOT NULL,
+    preco REAL NOT NULL,
+    status TEXT DEFAULT 'pendente',
+    data_compra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usado BOOLEAN DEFAULT 0,
+    data_uso TIMESTAMP,
+    qr_code TEXT
+)''')
+conn.commit()
+conn.close()
 
 ADMIN_LOGIN_TEMPLATE = '''
 <!DOCTYPE html>
