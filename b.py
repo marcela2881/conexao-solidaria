@@ -14,9 +14,6 @@ app.secret_key = 'conexao_solidaria_2025'
 def init_db():
     conn = sqlite3.connect('conexao_solidaria.db')
     c = conn.cursor()
-    def init_db():
-    conn = sqlite3.connect('conexao_solidaria.db')
-    c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS ingressos (
         id TEXT PRIMARY KEY,
         nome TEXT NOT NULL,
@@ -381,22 +378,7 @@ ADMIN_DASHBOARD_TEMPLATE = '''
     </div>
 </body>
 </html>
-'''CREATE TABLE IF NOT EXISTS ingressos (
-        id TEXT PRIMARY KEY,
-        nome TEXT NOT NULL,
-        email TEXT NOT NULL,
-        telefone TEXT,
-        idade INTEGER,
-        categoria TEXT NOT NULL,
-        preco REAL NOT NULL,
-        status TEXT DEFAULT 'pendente',
-        data_compra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        usado BOOLEAN DEFAULT 0,
-        data_uso TIMESTAMP,
-        qr_code TEXT
-    )''')
-    conn.commit()
-    conn.close()
+'''
 
 def gerar_qr_code_pix(valor, chave_pix="conexaosolidariamao@gmail.com", nome_beneficiario="CONEXAO SOLIDARIA", cidade="MANAUS"):
     payload = f"00020126580014br.gov.bcb.pix0136{chave_pix}520400005303986540{valor:.2f}5802BR5925{nome_beneficiario}6009{cidade}6304ABCD"
@@ -1284,7 +1266,6 @@ PAGAMENTO_TEMPLATE = '''
                 Crianças de 0 a 5 anos têm entrada gratuita!
             </p>
             
-            <!-- GRUPOS PARA INSCRIÇÕES GRATUITAS -->
             <div style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); border: 3px solid #22c55e; border-radius: 20px; padding: 30px; margin: 30px 0; text-align: center;">
                 <h4 style="color: #166534; font-size: 1.5em; margin-bottom: 20px;">📲 Entre no grupo:</h4>
                 
@@ -1703,7 +1684,7 @@ TEMPLATE_INGRESSO = '''
             </div>
             
             <div class="grupos-whatsapp">
-                <h4>📲 Grupos do WhatsApp</h4>
+                <h4>📲 Entre nos Grupos do WhatsApp</h4>
                 <div class="grupos-links">
                     <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" 
                        class="grupo-link grupo-iniciante">
@@ -1711,36 +1692,6 @@ TEMPLATE_INGRESSO = '''
                     </a>
                     <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" 
                        class="grupo-link grupo-intermediario">
-                        🥅 Grupo Intermediário (Tarde)
-                    </a>
-                </div>
-            </div>
-            
-            <!-- GRUPOS WHATSAPP -->
-            <div style="background: #dcfce7; border: 2px solid #22c55e; border-radius: 12px; padding: 14px; text-align: center; margin: 16px 0;">
-                <h4 style="color: #166534; margin-bottom: 12px; font-size: 0.95rem; font-weight: 600;">📲 Grupos do WhatsApp</h4>
-                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
-                       style="background: #25d366; color: white; padding: 10px 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.8rem; text-align: center; display: block; margin-bottom: 4px; flex: 1; min-width: 140px;">
-                        🏐 Grupo Iniciante (Manhã)
-                    </a>
-                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
-                       style="background: #f59e0b; color: white; padding: 10px 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.8rem; text-align: center; display: block; flex: 1; min-width: 140px;">
-                        🥅 Grupo Intermediário (Tarde)
-                    </a>
-                </div>
-            </div>
-            
-            <!-- GRUPOS WHATSAPP NO INGRESSO -->
-            <div style="background: #dcfce7; border: 2px solid #22c55e; border-radius: 12px; padding: 14px; text-align: center; margin: 16px 0;">
-                <h4 style="color: #166534; margin-bottom: 12px; font-size: 0.95rem; font-weight: 600;">📲 Entre nos Grupos do WhatsApp</h4>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="https://chat.whatsapp.com/C0PvsakJsvPIKD7XKVhKMf" target="_blank" 
-                       style="background: #25d366; color: white; padding: 12px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; text-align: center; display: block;">
-                        🏐 Grupo Iniciante (Manhã)
-                    </a>
-                    <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
-                       style="background: #f59e0b; color: white; padding: 12px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem; text-align: center; display: block;">
                         🥅 Grupo Intermediário (Tarde)
                     </a>
                 </div>
