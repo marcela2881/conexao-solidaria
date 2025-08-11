@@ -31,6 +31,158 @@ def init_db():
     conn.commit()
     conn.close()
 
+def gerar_qr_code_pix(valor, chave_pix="conexaosolidariamao@gmail.com", nome_beneficiario="VANESSA CARVALHO RAMOS", cidade="MANAUS"):
+    payload = f"00020126580014br.gov.bcb.pix0136{chave_pix}520400005303986540{valor:.2f}5802BR5925{nome_beneficiario}6009{cidade}6304ABCD"
+    return payload
+
+@app.route('/')
+def index():
+    return render_template_string(INDEX_TEMPLATE_COM_FOTOS)
+
+@app.route('/processar_carrinho_simples', methods=['POST'])
+def processar_carrinho_simples():
+    print("🔥 PROCESSANDO CARRINHO!")
+    
+    total_pessoas = int(request.form['total_pessoas'])
+    print(f"👥 Total de pessoas: {total_pessoas}")
+    
+    carrinho = []
+    preco_total = 0
+    
+    for i in range(1, total_pessoas + 1):
+        nome_key = f'nome_{i}'
+        if nome_key in request.form and request.form[nome_key]:
+            nome = request.form[f'nome_{i}']
+            email = request.form[f'email_{i}']
+            telefone = request.form.get(f'telefone_{i}', '')
+            idade = int(request.form[f'idade_{i}'])
+            categoria = request.form[f'categoria_{i}']
+            
+            # Calcular preço individual
+            if idade <= 5:
+                preco = 0
+                categoria_nome = "👶 Criança (0-5 anos) - GRATUITO"
+            elif idade <= 12:
+                preco = 25
+                if categoria == 'crianca_almoco':
+                    categoria_nome = "🧒 Almoço Criança (6-12 anos) + Day Use"
+                else:
+                    categoria_nome = "🧒 Criança (6-12 anos) + Day Use"
+            else:
+                if categoria == 'volei_iniciante':
+                    preco = 50
+                    categoria_nome = "🏐 Vôlei Iniciante + Almoço + Day Use"
+                elif categoria == 'volei_intermediario':
+                    preco = 50
+                    categoria_nome = "🏆 Vôlei Intermediário + Almoço + Day Use"
+                elif categoria == 'almoco_day_use':
+                    preco = 40
+                    categoria_nome = "🍽️ Almoço Adulto + Day Use"
+                elif categoria == 'crianca_almoco':
+                    preco = 25
+                    categoria_nome = "🧒 Almoço Criança + Day Use"
+                else:
+                    preco = 40
+                    categoria_nome = "🍽️ Almoço + Day Use"
+            
+            carrinho.append({
+                'nome': nome,
+                'email': email,
+                'telefone': telefone,
+                'idade': idade,
+                'categoria': categoria_nome,
+                'preco': preco
+            })
+            
+            preco_total += preco
+            print(f"👤 Pessoa {i}: {nome} - R$ {preco}")
+    
+    print(f"💰 Preço total: R$ {preco_total}")
+    
+    # Gerar ID do pedido
+    pedido_id = str(uuid.uuid4())[:8].upper()
+    
+    # Salvar no banco
+    try:
+        conn = sqlite3.connect('conexao_solidaria.db')
+        c = conn.cursor()
+        
+        # Salvar cada pessoa individualmente
+        for pessoa in carrinho:
+            ingresso_id = str(uuid.uuid4())[:8].upper()
+            c.execute('''
+                INSERT INTO ingressos (id, nome, email, telefone, idade, categoria, preco, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (ingresso_id, pessoa['nome'], pessoa['email'], pessoa['telefone'], 
+                  pessoa['idade'], pessoa['categoria'], pessoa['preco'], 'pendente'))
+        
+        # Criar registro do pedido consolidado
+        categoria_resumo = f"Pedido com {len(carrinho)} ingressos"
+        c.execute('''
+            INSERT INTO ingressos (id, nome, email, telefone, idade, categoria, preco, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (pedido_id, 'PEDIDO CONSOLIDADO', carrinho[0]['email'], '', 0, 
+              categoria_resumo, preco_total, 'pedido_consolidado'))
+        
+        conn.commit()
+        conn.close()
+        print("✅ Salvo no banco!")
+        
+    except Exception as e:
+        print(f"❌ Erro no banco: {e}")
+        return f"Erro no banco: {e}"
+    
+    print(f"🔄 Redirecionando para /pagamento_simples/{pedido_id}")
+    return redirect(url_for('pagamento_simples', ingresso_id=pedido_id))
+
+@app.route('/pagamento_simples/<ingresso_id>')
+def pagamento_simples(ingresso_id):
+    print(f"💳 CHEGOU NA PÁGINA DE PAGAMENTO! ID: {ingresso_id}")
+    
+    # Buscar no banco
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM ingressos WHERE id = ?', (ingresso_id,))
+    ingresso = c.fetchone()
+    conn.close()
+    
+    if not ingresso:
+        print("❌ Ingresso não encontrado!")
+        return "Ingresso não encontrado!"
+    
+    print(f"📋 Ingresso encontrado: {ingresso}")
+    
+    # ✅ USAR SUA IMAGEM QR CODE
+    qr_code_url = "/static/qrcoud.png"
+    
+    return render_template_string(PAGAMENTO_TEMPLATE, ingresso=ingresso, qr_code_url=qr_code_url)
+
+@app.route('/gerar_ingresso/<ingresso_id>')
+def gerar_ingresso(ingresso_id):
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM ingressos WHERE id = ?', (ingresso_id,))
+    ingresso = c.fetchone()
+    conn.close()
+    
+    if not ingresso:
+        return "Ingresso não encontrado!"
+    
+    qr_data = f"{ingresso[0]}|{ingresso[1]}|{ingresso[2]}"
+    qr = qrcode.QRCode(version=1, box_size=8, border=4)
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#9333ea", back_color="white")
+    
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    qr_code_base64 = base64.b64encode(buffered.getvalue()).decode()
+    
+    return render_template_string(TEMPLATE_INGRESSO, ingresso=ingresso, qr_code=qr_code_base64)
+
+# ==================== ROTAS ADMINISTRATIVAS ====================
+ADMIN_PASSWORD = "conexao2025"
+
 ADMIN_LOGIN_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -98,6 +250,92 @@ ADMIN_LOGIN_TEMPLATE = '''
 </body>
 </html>
 '''
+
+@app.route('/admin')
+def admin_login():
+    return render_template_string(ADMIN_LOGIN_TEMPLATE)
+
+@app.route('/admin/dashboard', methods=['GET', 'POST'])
+def admin_dashboard():
+    # Verificar senha
+    if request.method == 'POST':
+        senha = request.form.get('senha')
+        if senha != ADMIN_PASSWORD:
+            return "❌ Senha incorreta!"
+    elif request.method == 'GET':
+        senha = request.args.get('senha')
+        if senha != ADMIN_PASSWORD:
+            return redirect('/admin')
+    
+    # Buscar dados do banco
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    
+    c.execute('''SELECT * FROM ingressos 
+                 WHERE status != "pedido_consolidado"
+                 ORDER BY data_compra DESC''')
+    inscricoes = c.fetchall()
+    
+    c.execute('SELECT COUNT(*) FROM ingressos WHERE status != "pedido_consolidado"')
+    total_inscricoes = c.fetchone()[0]
+    
+    c.execute('SELECT SUM(preco) FROM ingressos WHERE status != "pedido_consolidado"')
+    receita_total = c.fetchone()[0] or 0
+    
+    c.execute('SELECT COUNT(*) FROM ingressos WHERE status = "confirmado"')
+    pagamentos_confirmados = c.fetchone()[0]
+    
+    c.execute('SELECT COUNT(*) FROM ingressos WHERE usado = 1')
+    ingressos_utilizados = c.fetchone()[0]
+    
+    conn.close()
+    
+    return render_template_string(ADMIN_DASHBOARD_TEMPLATE, 
+                                 inscricoes=inscricoes,
+                                 total_inscricoes=total_inscricoes,
+                                 receita_total=receita_total,
+                                 pagamentos_confirmados=pagamentos_confirmados,
+                                 ingressos_utilizados=ingressos_utilizados)
+
+@app.route('/admin/confirmar_pagamento/<ingresso_id>')
+def confirmar_pagamento(ingresso_id):
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('UPDATE ingressos SET status = "confirmado" WHERE id = ?', (ingresso_id,))
+    conn.commit()
+    conn.close()
+    return redirect(f'/admin/dashboard?senha={ADMIN_PASSWORD}')
+
+@app.route('/admin/marcar_usado/<ingresso_id>')
+def marcar_usado(ingresso_id):
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('UPDATE ingressos SET usado = 1, data_uso = CURRENT_TIMESTAMP WHERE id = ?', (ingresso_id,))
+    conn.commit()
+    conn.close()
+    return redirect(f'/admin/dashboard?senha={ADMIN_PASSWORD}')
+
+@app.route('/admin/exportar_excel')
+def exportar_excel():
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM ingressos WHERE status != "pedido_consolidado" ORDER BY data_compra DESC')
+    dados = c.fetchall()
+    conn.close()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Nome', 'Email', 'Telefone', 'Idade', 'Categoria', 'Preço', 'Status', 'Data Compra', 'Usado', 'Data Uso', 'QR Code'])
+    
+    for linha in dados:
+        writer.writerow(linha)
+    
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=inscricoes_conexao_solidaria.csv"}
+    )
 
 ADMIN_DASHBOARD_TEMPLATE = '''
 <!DOCTYPE html>
@@ -380,259 +618,6 @@ ADMIN_DASHBOARD_TEMPLATE = '''
 </html>
 '''
 
-def gerar_qr_code_pix(valor, chave_pix="conexaosolidariamao@gmail.com", nome_beneficiario="CONEXAO SOLIDARIA", cidade="MANAUS"):
-    payload = f"00020126580014br.gov.bcb.pix0136{chave_pix}520400005303986540{valor:.2f}5802BR5925{nome_beneficiario}6009{cidade}6304ABCD"
-    return payload
-
-@app.route('/')
-def index():
-    return render_template_string(INDEX_TEMPLATE_COM_FOTOS)
-
-@app.route('/processar_carrinho_simples', methods=['POST'])
-def processar_carrinho_simples():
-    print("🔥 PROCESSANDO CARRINHO!")
-    
-    total_pessoas = int(request.form['total_pessoas'])
-    print(f"👥 Total de pessoas: {total_pessoas}")
-    
-    carrinho = []
-    preco_total = 0
-    
-    for i in range(1, total_pessoas + 1):
-        nome_key = f'nome_{i}'
-        if nome_key in request.form and request.form[nome_key]:
-            nome = request.form[f'nome_{i}']
-            email = request.form[f'email_{i}']
-            telefone = request.form.get(f'telefone_{i}', '')
-            idade = int(request.form[f'idade_{i}'])
-            categoria = request.form[f'categoria_{i}']
-            
-            # Calcular preço individual
-            if idade <= 5:
-                preco = 0
-                categoria_nome = "👶 Criança (0-5 anos) - GRATUITO"
-            elif idade <= 12:
-                preco = 25
-                if categoria == 'crianca_almoco':
-                    categoria_nome = "🧒 Almoço Criança (6-12 anos) + Day Use"
-                else:
-                    categoria_nome = "🧒 Criança (6-12 anos) + Day Use"
-            else:
-                if categoria == 'volei_iniciante':
-                    preco = 50
-                    categoria_nome = "🏐 Vôlei Iniciante + Almoço + Day Use"
-                elif categoria == 'volei_intermediario':
-                    preco = 50
-                    categoria_nome = "🥅 Vôlei Intermediário + Almoço + Day Use"
-                elif categoria == 'almoco_day_use':
-                    preco = 40
-                    categoria_nome = "🍽️ Almoço Adulto + Day Use"
-                elif categoria == 'crianca_almoco':
-                    preco = 25
-                    categoria_nome = "🧒 Almoço Criança + Day Use"
-                else:
-                    preco = 40
-                    categoria_nome = "🍽️ Almoço + Day Use"
-            
-            carrinho.append({
-                'nome': nome,
-                'email': email,
-                'telefone': telefone,
-                'idade': idade,
-                'categoria': categoria_nome,
-                'preco': preco
-            })
-            
-            preco_total += preco
-            print(f"👤 Pessoa {i}: {nome} - R$ {preco}")
-    
-    print(f"💰 Preço total: R$ {preco_total}")
-    
-    # Gerar ID do pedido
-    pedido_id = str(uuid.uuid4())[:8].upper()
-    
-    # Salvar no banco
-    try:
-        conn = sqlite3.connect('conexao_solidaria.db')
-        c = conn.cursor()
-        
-        # Salvar cada pessoa individualmente
-        for pessoa in carrinho:
-            ingresso_id = str(uuid.uuid4())[:8].upper()
-            c.execute('''
-                INSERT INTO ingressos (id, nome, email, telefone, idade, categoria, preco, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (ingresso_id, pessoa['nome'], pessoa['email'], pessoa['telefone'], 
-                  pessoa['idade'], pessoa['categoria'], pessoa['preco'], 'pendente'))
-        
-        # Criar registro do pedido consolidado
-        categoria_resumo = f"Pedido com {len(carrinho)} ingressos"
-        c.execute('''
-            INSERT INTO ingressos (id, nome, email, telefone, idade, categoria, preco, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (pedido_id, 'PEDIDO CONSOLIDADO', carrinho[0]['email'], '', 0, 
-              categoria_resumo, preco_total, 'pedido_consolidado'))
-        
-        conn.commit()
-        conn.close()
-        print("✅ Salvo no banco!")
-        
-    except Exception as e:
-        print(f"❌ Erro no banco: {e}")
-        return f"Erro no banco: {e}"
-    
-    print(f"🔄 Redirecionando para /pagamento_simples/{pedido_id}")
-    return redirect(url_for('pagamento_simples', ingresso_id=pedido_id))
-
-@app.route('/pagamento_simples/<ingresso_id>')
-def pagamento_simples(ingresso_id):
-    print(f"💳 CHEGOU NA PÁGINA DE PAGAMENTO! ID: {ingresso_id}")
-    
-    # Buscar no banco
-    conn = sqlite3.connect('conexao_solidaria.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM ingressos WHERE id = ?', (ingresso_id,))
-    ingresso = c.fetchone()
-    conn.close()
-    
-    if not ingresso:
-        print("❌ Ingresso não encontrado!")
-        return "Ingresso não encontrado!"
-    
-    print(f"📋 Ingresso encontrado: {ingresso}")
-    
-    # Gerar QR Code
-    pix_qr_str = ""
-    if ingresso[6] > 0:  # se preco > 0
-        print("📱 Gerando QR Code PIX...")
-        try:
-            pix_data = gerar_qr_code_pix(valor=ingresso[6])
-            qr = qrcode.QRCode(version=1, box_size=8, border=4)
-            qr.add_data(pix_data)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            
-            buffered = io.BytesIO()
-            img.save(buffered, format="PNG")
-            pix_qr_str = base64.b64encode(buffered.getvalue()).decode()
-            print("✅ QR Code gerado!")
-        except Exception as e:
-            print(f"❌ Erro no QR Code: {e}")
-    
-    return render_template_string(PAGAMENTO_TEMPLATE, ingresso=ingresso, qr_code=pix_qr_str)
-
-@app.route('/gerar_ingresso/<ingresso_id>')
-def gerar_ingresso(ingresso_id):
-    conn = sqlite3.connect('conexao_solidaria.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM ingressos WHERE id = ?', (ingresso_id,))
-    ingresso = c.fetchone()
-    conn.close()
-    
-    if not ingresso:
-        return "Ingresso não encontrado!"
-    
-    qr_data = f"{ingresso[0]}|{ingresso[1]}|{ingresso[2]}"
-    qr = qrcode.QRCode(version=1, box_size=8, border=4)
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="#9333ea", back_color="white")
-    
-    buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
-    qr_code_base64 = base64.b64encode(buffered.getvalue()).decode()
-    
-    return render_template_string(TEMPLATE_INGRESSO, ingresso=ingresso, qr_code=qr_code_base64)
-
-# ==================== ROTAS ADMINISTRATIVAS ====================
-ADMIN_PASSWORD = "conexao2025"
-
-@app.route('/admin')
-def admin_login():
-    return render_template_string(ADMIN_LOGIN_TEMPLATE)
-
-@app.route('/admin/dashboard', methods=['GET', 'POST'])
-def admin_dashboard():
-    # Verificar senha
-    if request.method == 'POST':
-        senha = request.form.get('senha')
-        if senha != ADMIN_PASSWORD:
-            return "❌ Senha incorreta!"
-    elif request.method == 'GET':
-        senha = request.args.get('senha')
-        if senha != ADMIN_PASSWORD:
-            return redirect('/admin')
-    
-    # Buscar dados do banco
-    conn = sqlite3.connect('conexao_solidaria.db')
-    c = conn.cursor()
-    
-    c.execute('''SELECT * FROM ingressos 
-                 WHERE status != "pedido_consolidado"
-                 ORDER BY data_compra DESC''')
-    inscricoes = c.fetchall()
-    
-    c.execute('SELECT COUNT(*) FROM ingressos WHERE status != "pedido_consolidado"')
-    total_inscricoes = c.fetchone()[0]
-    
-    c.execute('SELECT SUM(preco) FROM ingressos WHERE status != "pedido_consolidado"')
-    receita_total = c.fetchone()[0] or 0
-    
-    c.execute('SELECT COUNT(*) FROM ingressos WHERE status = "confirmado"')
-    pagamentos_confirmados = c.fetchone()[0]
-    
-    c.execute('SELECT COUNT(*) FROM ingressos WHERE usado = 1')
-    ingressos_utilizados = c.fetchone()[0]
-    
-    conn.close()
-    
-    return render_template_string(ADMIN_DASHBOARD_TEMPLATE, 
-                                 inscricoes=inscricoes,
-                                 total_inscricoes=total_inscricoes,
-                                 receita_total=receita_total,
-                                 pagamentos_confirmados=pagamentos_confirmados,
-                                 ingressos_utilizados=ingressos_utilizados)
-
-@app.route('/admin/confirmar_pagamento/<ingresso_id>')
-def confirmar_pagamento(ingresso_id):
-    conn = sqlite3.connect('conexao_solidaria.db')
-    c = conn.cursor()
-    c.execute('UPDATE ingressos SET status = "confirmado" WHERE id = ?', (ingresso_id,))
-    conn.commit()
-    conn.close()
-    return redirect(f'/admin/dashboard?senha={ADMIN_PASSWORD}')
-
-@app.route('/admin/marcar_usado/<ingresso_id>')
-def marcar_usado(ingresso_id):
-    conn = sqlite3.connect('conexao_solidaria.db')
-    c = conn.cursor()
-    c.execute('UPDATE ingressos SET usado = 1, data_uso = CURRENT_TIMESTAMP WHERE id = ?', (ingresso_id,))
-    conn.commit()
-    conn.close()
-    return redirect(f'/admin/dashboard?senha={ADMIN_PASSWORD}')
-
-@app.route('/admin/exportar_excel')
-def exportar_excel():
-    conn = sqlite3.connect('conexao_solidaria.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM ingressos WHERE status != "pedido_consolidado" ORDER BY data_compra DESC')
-    dados = c.fetchall()
-    conn.close()
-    
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(['ID', 'Nome', 'Email', 'Telefone', 'Idade', 'Categoria', 'Preço', 'Status', 'Data Compra', 'Usado', 'Data Uso', 'QR Code'])
-    
-    for linha in dados:
-        writer.writerow(linha)
-    
-    output.seek(0)
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-disposition": "attachment; filename=inscricoes_conexao_solidaria.csv"}
-    )
-
 # TEMPLATES
 INDEX_TEMPLATE_COM_FOTOS = '''
 <!DOCTYPE html>
@@ -672,14 +657,14 @@ INDEX_TEMPLATE_COM_FOTOS = '''
         }
         
         .header h1 { 
-            font-size: 3.2em; 
+            font-size: 2.8em; 
             margin-bottom: 15px; 
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             font-weight: bold;
         }
         
         .header h2 { 
-            font-size: 1.8em; 
+            font-size: 1.6em; 
             margin-bottom: 20px; 
             opacity: 0.95;
         }
@@ -883,7 +868,7 @@ INDEX_TEMPLATE_COM_FOTOS = '''
     <div class="container">
         <div class="header">
             <h1>🏐 I TORNEIO BENEFICENTE</h1>
-            <h2>🥅 CONEXÃO SOLIDÁRIA 2025 🥅</h2>
+            <h2>🏆 CONEXÃO SOLIDÁRIA 2025 🏆</h2>
             <div class="subtitle">Esporte, Solidariedade e Diversão em um só lugar!</div>
         </div>
 
@@ -920,7 +905,7 @@ INDEX_TEMPLATE_COM_FOTOS = '''
                             <select name="categoria_1" required onchange="calcularPreco(1)">
                                 <option value="">Selecione sua categoria...</option>
                                 <option value="volei_iniciante">🏐 Vôlei Iniciante + Almoço + Day Use (R$ 50,00)</option>
-                                <option value="volei_intermediario">🥅 Vôlei Intermediário + Almoço + Day Use (R$ 50,00)</option>
+                                <option value="volei_intermediario">🏆 Vôlei Intermediário + Almoço + Day Use (R$ 50,00)</option>
                                 <option value="almoco_day_use">🍽️ Almoço Adulto + Day Use (R$ 40,00)</option>
                                 <option value="crianca_almoco">🧒 Almoço Criança (6-12 anos) + Day Use (R$ 25,00)</option>
                             </select>
@@ -1072,7 +1057,7 @@ INDEX_TEMPLATE_COM_FOTOS = '''
                 '<select name="categoria_' + contadorPessoas + '" required onchange="calcularPreco(' + contadorPessoas + ')">' +
                 '<option value="">Selecione sua categoria...</option>' +
                 '<option value="volei_iniciante">🏐 Vôlei Iniciante + Almoço + Day Use (R$ 50,00)</option>' +
-                '<option value="volei_intermediario">🥅 Vôlei Intermediário + Almoço + Day Use (R$ 50,00)</option>' +
+                '<option value="volei_intermediario">🏆 Vôlei Intermediário + Almoço + Day Use (R$ 50,00)</option>' +
                 '<option value="almoco_day_use">🍽️ Almoço Adulto + Day Use (R$ 40,00)</option>' +
                 '<option value="crianca_almoco">🧒 Almoço Criança (6-12 anos) + Day Use (R$ 25,00)</option>' +
                 '</select>' +
@@ -1130,7 +1115,7 @@ PAGAMENTO_TEMPLATE = '''
             margin-bottom: 30px;
         }
         .header h1 {
-            font-size: 2.5em;
+            font-size: 2em;
             margin-bottom: 10px;
             font-weight: bold;
         }
@@ -1166,7 +1151,13 @@ PAGAMENTO_TEMPLATE = '''
             display: inline-block;
             margin: 25px 0;
             box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            border: 3px solid #0ea5e9;
+            border: 3px solid #9333ea;
+        }
+        .qr-container img {
+            max-width: 300px;
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.2);
         }
         .whatsapp-section {
             background: linear-gradient(135deg, #dcfce7, #bbf7d0);
@@ -1187,6 +1178,13 @@ PAGAMENTO_TEMPLATE = '''
             margin: 30px auto;
             font-weight: bold;
         }
+        .pix-info {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 3px solid #0ea5e9;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 25px 0;
+        }
     </style>
 </head>
 <body>
@@ -1206,24 +1204,23 @@ PAGAMENTO_TEMPLATE = '''
         
         {% if ingresso[6] > 0 %}
         <div class="pix-section">
-            <h2 style="color: #0369a1; font-size: 2em;">🔸 Pagamento via PIX</h2>
+            <h2 style="color: #0369a1; font-size: 2em; margin-bottom: 20px;">🔸 Pagamento via PIX</h2>
             
             <div class="valor-destaque">
                 💰 R$ {{ "%.2f"|format(ingresso[6]) }}
             </div>
             
-            <div style="background: #f0f9ff; padding: 20px; border-radius: 15px; margin: 25px 0;">
-                <p style="color: #0369a1; font-weight: bold;">📧 Chave PIX: conexaosolidariamao@gmail.com</p>
-                <p style="color: #0369a1; font-weight: bold;">👤 Beneficiário: Conexão Solidária</p>
+            <div class="pix-info">
+                <p style="color: #0369a1; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;">📧 Chave PIX: conexaosolidariamao@gmail.com</p>
+                <p style="color: #0369a1; font-weight: bold; font-size: 1.1em;">👤 Beneficiário: Vanessa Carvalho Ramos</p>
             </div>
             
-            {% if qr_code %}
+            <!-- SEU QR CODE PERSONALIZADO -->
             <div class="qr-container">
-                <h4 style="color: #0369a1; margin-bottom: 15px;">📱 QR Code PIX</h4>
-                <img src="data:image/png;base64,{{ qr_code }}" style="max-width: 280px;">
-                <p style="color: #6b7280; margin-top: 15px;">Escaneie com o app do seu banco</p>
+                <h4 style="color: #9333ea; margin-bottom: 20px; font-size: 1.3em;">📱 QR Code PIX</h4>
+                <img src="{{ qr_code_url }}" alt="QR Code PIX - Conexão Solidária">
+                <p style="color: #6b7280; margin-top: 15px; font-weight: bold;">Escaneie com o app do seu banco</p>
             </div>
-            {% endif %}
             
             <div class="whatsapp-section">
                 <h4 style="color: #166534; font-size: 1.5em; margin-bottom: 20px;">📲 Após o pagamento:</h4>
@@ -1253,7 +1250,7 @@ PAGAMENTO_TEMPLATE = '''
                     </a>
                     <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
                        style="background: #f59e0b; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
-                        🥅 Grupo Intermediário (Tarde)
+                        🏆 Grupo Intermediário (Tarde)
                     </a>
                 </div>
             </div>
@@ -1276,7 +1273,7 @@ PAGAMENTO_TEMPLATE = '''
                     </a>
                     <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" target="_blank" 
                        style="background: #f59e0b; color: white; padding: 15px 25px; border-radius: 15px; text-decoration: none; font-weight: bold; display: inline-block; min-width: 200px; text-align: center;">
-                        🥅 Grupo Intermediário (Tarde)
+                        🏆 Grupo Intermediário (Tarde)
                     </a>
                 </div>
             </div>
@@ -1600,7 +1597,7 @@ TEMPLATE_INGRESSO = '''
     <div class="ingresso-container">
         <div class="ingresso-header">
             <div class="evento-title">🏐 I TORNEIO BENEFICENTE</div>
-            <div class="evento-subtitle">🥅 CONEXÃO SOLIDÁRIA 2025 🥅</div>
+            <div class="evento-subtitle">🏆 CONEXÃO SOLIDÁRIA 2025 🏆</div>
             <div class="evento-data">📅 Data do Evento</div>
         </div>
         
@@ -1692,7 +1689,7 @@ TEMPLATE_INGRESSO = '''
                     </a>
                     <a href="https://chat.whatsapp.com/LSOR6KMha1uLvtmNrvzutt" 
                        class="grupo-link grupo-intermediario">
-                        🥅 Grupo Intermediário (Tarde)
+                        🏆 Grupo Intermediário (Tarde)
                     </a>
                 </div>
             </div>
