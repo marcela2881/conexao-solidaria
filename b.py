@@ -8,7 +8,7 @@ import io
 import base64
 import csv
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = 'conexao_solidaria_2025'
 
 def init_db():
@@ -152,8 +152,8 @@ def pagamento_simples(ingresso_id):
     
     print(f"📋 Ingresso encontrado: {ingresso}")
     
-    # ✅ USAR SUA IMAGEM QR CODE
-    qr_code_url = "/static/qrcoud.png"
+    # ✅ USAR SUA IMAGEM QR CODE (.jpg)
+    qr_code_url = "/static/qrcoud.jpg"
     
     return render_template_string(PAGAMENTO_TEMPLATE, ingresso=ingresso, qr_code_url=qr_code_url)
 
@@ -1215,7 +1215,7 @@ PAGAMENTO_TEMPLATE = '''
                 <p style="color: #0369a1; font-weight: bold; font-size: 1.1em;">👤 Beneficiário: Vanessa Carvalho Ramos</p>
             </div>
             
-            <!-- SEU QR CODE PERSONALIZADO -->
+            <!-- SEU QR CODE PERSONALIZADO (.jpg) -->
             <div class="qr-container">
                 <h4 style="color: #9333ea; margin-bottom: 20px; font-size: 1.3em;">📱 QR Code PIX</h4>
                 <img src="{{ qr_code_url }}" alt="QR Code PIX - Conexão Solidária">
