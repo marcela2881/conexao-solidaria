@@ -315,6 +315,15 @@ def marcar_usado(ingresso_id):
     conn.close()
     return redirect(f'/admin/dashboard?senha={ADMIN_PASSWORD}')
 
+@app.route('/admin/excluir_inscricao/<ingresso_id>')
+def excluir_inscricao(ingresso_id):
+    conn = sqlite3.connect('conexao_solidaria.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM ingressos WHERE id = ?', (ingresso_id,))
+    conn.commit()
+    conn.close()
+    return redirect(f'/admin/dashboard?senha={ADMIN_PASSWORD}')
+
 @app.route('/admin/exportar_excel')
 def exportar_excel():
     conn = sqlite3.connect('conexao_solidaria.db')
@@ -457,7 +466,7 @@ ADMIN_DASHBOARD_TEMPLATE = '''
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            margin: 1px;
+            margin: 2px;
             font-size: 11px;
             font-weight: bold;
             text-align: center;
@@ -465,6 +474,7 @@ ADMIN_DASHBOARD_TEMPLATE = '''
         }
         .btn-confirmar { background: #22c55e; color: white; }
         .btn-usar { background: #f59e0b; color: white; }
+        .btn-excluir { background: #dc2626; color: white; }
         .btn-ingresso { 
             background: linear-gradient(135deg, #9333ea, #7c3aed); 
             color: white; 
@@ -478,7 +488,7 @@ ADMIN_DASHBOARD_TEMPLATE = '''
         .usado { background: #f3f4f6; opacity: 0.7; }
         
         .acoes-col {
-            min-width: 180px;
+            min-width: 220px;
         }
         
         .nome-col {
@@ -587,19 +597,26 @@ ADMIN_DASHBOARD_TEMPLATE = '''
                                title="Gerar ingresso visual para {{ inscricao[1] }}">
                                 🎫 Gerar Ingresso
                             </a>
-                            <br>
+                            <br><br>
                             
                             {% if inscricao[7] != 'confirmado' and inscricao[6] > 0 %}
                                 <a href="/admin/confirmar_pagamento/{{ inscricao[0] }}" 
                                    class="btn btn-confirmar"
                                    title="Confirmar pagamento">✅ Confirmar</a>
+                                <br>
                             {% endif %}
                             
                             {% if not inscricao[9] and inscricao[7] == 'confirmado' %}
                                 <a href="/admin/marcar_usado/{{ inscricao[0] }}" 
                                    class="btn btn-usar"
                                    title="Marcar como usado">🎫 Usar</a>
+                                <br>
                             {% endif %}
+                            
+                            <a href="/admin/excluir_inscricao/{{ inscricao[0] }}" 
+                               class="btn btn-excluir"
+                               onclick="return confirm('⚠️ ATENÇÃO!\\n\\nTem certeza que deseja EXCLUIR definitivamente a inscrição de {{ inscricao[1] }}?\\n\\nEsta ação não pode ser desfeita!')"
+                               title="Excluir inscrição permanentemente">🗑️ Excluir</a>
                         </td>
                     </tr>
                     {% endfor %}
