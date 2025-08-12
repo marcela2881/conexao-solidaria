@@ -657,14 +657,14 @@ INDEX_TEMPLATE_COM_FOTOS = '''
         }
         
         .header h1 { 
-            font-size: 2.8em; 
+            font-size: 2.2em; 
             margin-bottom: 15px; 
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             font-weight: bold;
         }
         
         .header h2 { 
-            font-size: 1.6em; 
+            font-size: 1.3em; 
             margin-bottom: 20px; 
             opacity: 0.95;
         }
@@ -861,6 +861,8 @@ INDEX_TEMPLATE_COM_FOTOS = '''
             .fotos-grid { grid-template-columns: repeat(2, 1fr); }
             .foto-real img { height: 100px; }
             .foto-legenda { font-size: 0.8em; }
+            .header h1 { font-size: 1.8em; }
+            .header h2 { font-size: 1.1em; }
         }
     </style>
 </head>
